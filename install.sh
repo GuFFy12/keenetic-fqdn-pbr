@@ -1,5 +1,5 @@
 #!/bin/sh
-set -euo pipefail
+set -euox pipefail
 IFS=$'\n\t'
 
 RELEASE_TAG=v1.0.0
@@ -32,6 +32,7 @@ select_number() {
 			counter=$((counter + 1))
 		done
 
+		echo Select number:
 		read -r choice
 
 		selected_line="$(echo "$1" | sed -n "${choice}p")"
@@ -84,8 +85,8 @@ select_dnsmasq_routing_interface() {
 	echo Interface list:
 	select_number "$interfaces"
 
-	DNSMASQ_ROUTING_CONFIG_INTERFACE="$($selected_line | awk '{print $2}')"
-	DNSMASQ_ROUTING_CONFIG_INTERFACE_SUBNET="$($selected_line | awk '{print $3}')"
+	DNSMASQ_ROUTING_CONFIG_INTERFACE="$(echo "$selected_line" | awk '{print $2}')"
+	DNSMASQ_ROUTING_CONFIG_INTERFACE_SUBNET="$(echo "$selected_line" | awk '{print $3}')"
 }
 
 if ! command -v ndmc >/dev/null; then
@@ -108,9 +109,9 @@ opkg update && opkg install cron dnsmasq grep ipset iptables
 
 echo Installing Dnsmasq Routing...
 delete_service "$DNSMASQ_ROUTING_BASE" "$DNSMASQ_ROUTING_SCRIPT"
-if [ -n "$(readlink -f "$0")" ]; then
-	cp -r opt/* /opt/
-else
+# if [ -n "$(readlink -f "$0")" ]; then
+# 	cp -r opt/* /opt/
+# else
 	TMP_DIR=$(mktemp -d)
 	RELEASE_FILE="keenetic-dnsmasq-routing-$RELEASE_TAG.tar.gz"
 
@@ -118,7 +119,7 @@ else
 	tar -xvzf "$TMP_DIR/$RELEASE_FILE" -C "$TMP_DIR" >/dev/null
 	cp -r "$TMP_DIR/opt/"* /opt/
 	rm -rf "$TMP_DIR"
-fi
+# fi
 
 echo Changing the settings...
 if ! get_dnsmasq_config_server; then
