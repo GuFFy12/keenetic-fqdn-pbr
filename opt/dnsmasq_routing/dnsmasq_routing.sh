@@ -17,6 +17,8 @@ do_start() {
 	if [ "$KILL_SWITCH" = "1" ]; then
 		ip_route_blackhole_apply
 	fi
+
+	echo Dnsmasq Routing started
 }
 
 do_stop() {
@@ -26,6 +28,8 @@ do_stop() {
 		ipset_save
 	fi
 	ipset_destroy
+
+	echo Dnsmasq Routing stopped
 }
 
 usage() {

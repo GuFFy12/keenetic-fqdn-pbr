@@ -32,7 +32,7 @@ select_number() {
 			counter=$((counter + 1))
 		done
 
-		echo Select number:
+		echo Enter number:
 		read -r choice
 
 		selected_line="$(echo "$1" | sed -n "${choice}p")"
@@ -49,12 +49,17 @@ set_config_value() {
 
 add_cron_job() {
 	if ! crontab -l 2>/dev/null | grep -Fq "$2"; then
-		(
-			crontab -l 2>/dev/null
-			echo "$1 $2"
-		) | crontab -
+		if crontab -l 2>/dev/null; then
+			( crontab -l 2>/dev/null; echo "$1 $2" ) | crontab -
+		else
+			echo "$1 $2" | crontab -
+		fi
 	fi
 }
+
+if ask_yes_no "Create cron job to auto save dnsmasq ipset?"; then
+	add_cron_job "0 0 * * *" "$DNSMASQ_ROUTING_SCRIPT save"
+fi
 
 rm_dir() {
 	if [ -d "$1" ]; then
@@ -109,9 +114,9 @@ opkg update && opkg install cron dnsmasq grep ipset iptables
 
 echo Installing Dnsmasq Routing...
 delete_service "$DNSMASQ_ROUTING_BASE" "$DNSMASQ_ROUTING_SCRIPT"
-# if [ -n "$(readlink -f "$0")" ]; then
-# 	cp -r opt/* /opt/
-# else
+if [ -n "$(readlink -f "$0")" ]; then
+	cp -r opt/* /opt/
+else
 	TMP_DIR=$(mktemp -d)
 	RELEASE_FILE="keenetic-dnsmasq-routing-$RELEASE_TAG.tar.gz"
 
@@ -119,7 +124,7 @@ delete_service "$DNSMASQ_ROUTING_BASE" "$DNSMASQ_ROUTING_SCRIPT"
 	tar -xvzf "$TMP_DIR/$RELEASE_FILE" -C "$TMP_DIR" >/dev/null
 	cp -r "$TMP_DIR/opt/"* /opt/
 	rm -rf "$TMP_DIR"
-# fi
+fi
 
 echo Changing the settings...
 if ! get_dnsmasq_config_server; then
