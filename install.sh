@@ -29,8 +29,10 @@ select_number() {
 		counter=1
 		echo "$1" | while IFS= read -r line; do
 			echo "$counter: $line"
-			((counter++))
+			: $(( counter++ ))
 		done
+
+		read -r choice
 
 		selected_line="$(echo "$interfaces" | awk -F':' -v choice="$choice" '$1 == choice')"
 		if [ -n "$selected_line" ]; then
