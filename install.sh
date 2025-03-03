@@ -36,11 +36,9 @@ select_number() {
 
 		selected_line="$(echo "$1" | sed -n "${choice}p")"
 		if [ -n "$selected_line" ]; then
-			echo "$selected_line"
 			return 0
-		else
-			echo Invalid choice
 		fi
+		echo Invalid choice
 	done
 }
 
