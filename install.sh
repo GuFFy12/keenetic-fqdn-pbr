@@ -29,7 +29,7 @@ select_number() {
 		counter=1
 		echo "$1" | while IFS= read -r line; do
 			echo "$counter: $line"
-			: $(( counter++ ))
+			counter=$((counter + 1))
 		done
 
 		read -r choice
@@ -84,10 +84,10 @@ select_dnsmasq_routing_interface() {
 	interfaces="$(ip -o -4 addr show | awk '{print $2, $4}')"
 
 	echo Interface list:
-	interface="$(select_number "$interfaces")"
+	select_number "$interfaces"
 
-	DNSMASQ_ROUTING_CONFIG_INTERFACE="$($interface | awk '{print $2}')"
-	DNSMASQ_ROUTING_CONFIG_INTERFACE_SUBNET="$($interface | awk '{print $3}')"
+	DNSMASQ_ROUTING_CONFIG_INTERFACE="$($selected_line | awk '{print $2}')"
+	DNSMASQ_ROUTING_CONFIG_INTERFACE_SUBNET="$($selected_line | awk '{print $3}')"
 }
 
 if ! command -v ndmc >/dev/null; then
