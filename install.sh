@@ -36,6 +36,8 @@ select_number() {
 		if [ -n "$selected_line" ]; then
 			echo "$selected_line"
 			return 0
+		else
+			echo Invalid choice
 		fi
 	done
 }
@@ -45,14 +47,11 @@ set_config_value() {
 }
 
 add_cron_job() {
-	if ! crontab -l 2>/dev/null | grep -Fq "$1"; then
+	if ! crontab -l 2>/dev/null | grep -Fq "$2"; then
 		(
 			crontab -l 2>/dev/null
-			echo "$1"
+			echo "$1 $2"
 		) | crontab -
-		echo "Cronjob added: $1"
-	else
-		echo "Cronjob already exists: $1"
 	fi
 }
 
@@ -133,7 +132,7 @@ set_config_value "$DNSMASQ_ROUTING_CONFIG" "INTERFACE" "$DNSMASQ_ROUTING_CONFIG_
 set_config_value "$DNSMASQ_ROUTING_CONFIG" "INTERFACE_SUBNET" "$DNSMASQ_ROUTING_CONFIG_INTERFACE_SUBNET"
 
 if ask_yes_no "Create cron job to auto save dnsmasq ipset?"; then
-	add_cron_job "0 0 * * * $DNSMASQ_ROUTING_SCRIPT save"
+	add_cron_job "0 0 * * *" "$DNSMASQ_ROUTING_SCRIPT save"
 fi
 
 echo Running dnsmasq routing...
