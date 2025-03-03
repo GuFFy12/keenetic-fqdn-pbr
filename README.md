@@ -50,7 +50,7 @@
   githubcopilot.com
   ```
 
-### 5. Конфигурация Dnsmasq ([`/opt/dnsmasq_routing/dnsmasq.conf`](https://thekelleys.org.uk/dnsmasq/docs/dnsmasq-man.html))
+### 4. Конфигурация Dnsmasq ([`/opt/dnsmasq_routing/dnsmasq.conf`](https://thekelleys.org.uk/dnsmasq/docs/dnsmasq-man.html))
 
 - Переменная `server` установлена автоматически на первый найденный `127.0.0.1:port`, который используется для получения DNS записей.
   Чтобы вручную получить список DNS серверов, выполните команду:
@@ -59,7 +59,7 @@
   cat /tmp/ndnproxymain.stat
   ```
 
-### 6. Конфигурация Dnsmasq Routing (`/opt/dnsmasq_routing/dnsmasq_routing.conf`)
+### 5. Конфигурация Dnsmasq Routing (`/opt/dnsmasq_routing/dnsmasq_routing.conf`)
 
 - Устройство отправляет DNS-запрос на маршрутизатор, который с помощью dnsmasq возвращает IP-адрес и добавляет его в ipset.
   Все IP-адреса из ipset перенаправляются через туннель. Для работы системы важно, чтобы все DNS-запросы шли через маршрутизатор.
