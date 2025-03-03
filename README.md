@@ -1,4 +1,4 @@
-# Keenetic Bypass
+# Keenetic Dnsmasq Routing
 
 ## Замечания
 
@@ -29,7 +29,7 @@
   ```
 
 - Или если хотите установить в режиме оффлайн, то разархивируйте на роутере
-  [файл релиз](https://github.com/GuFFy12/keenetic-bypass/releases/latest) и запустите:
+  [файл релиз](https://github.com/GuFFy12/keenetic-dnsmasq-routing/releases/latest) и запустите:
 
   ```sh
   sh install.sh
