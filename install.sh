@@ -85,8 +85,8 @@ select_dnsmasq_routing_interface() {
 	echo Interface list:
 	select_number "$interfaces"
 
-	DNSMASQ_ROUTING_CONFIG_INTERFACE="$(echo "$selected_line" | awk '{print $2}')"
-	DNSMASQ_ROUTING_CONFIG_INTERFACE_SUBNET="$(echo "$selected_line" | awk '{print $3}')"
+	DNSMASQ_ROUTING_CONFIG_INTERFACE="$(echo "$selected_line" | awk '{print $1}')"
+	DNSMASQ_ROUTING_CONFIG_INTERFACE_SUBNET="$(echo "$selected_line" | awk '{print $2}')"
 }
 
 if ! command -v ndmc >/dev/null; then
