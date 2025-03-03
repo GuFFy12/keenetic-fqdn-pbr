@@ -1,5 +1,5 @@
 #!/bin/sh
-set -euox pipefail
+set -euo pipefail
 IFS=$'\n\t'
 
 RELEASE_TAG=v1.0.0
