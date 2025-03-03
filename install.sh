@@ -34,7 +34,7 @@ select_number() {
 
 		read -r choice
 
-		selected_line="$(echo "$interfaces" | awk -F':' -v choice="$choice" '$1 == choice')"
+		selected_line="$(echo "$1" | sed -n "${choice}p")"
 		if [ -n "$selected_line" ]; then
 			echo "$selected_line"
 			return 0
@@ -81,10 +81,10 @@ get_dnsmasq_config_server() {
 }
 
 select_dnsmasq_routing_interface() {
-	interfaces="$(ip -o -4 addr show | awk '{$2 " " $4}')"
+	interfaces="$(ip -o -4 addr show | awk '{print $2, $4}')"
 
 	echo Interface list:
-	interface="$(sed -n "$(select_number "$interfaces")p")"
+	interface="$(select_number "$interfaces")"
 
 	DNSMASQ_ROUTING_CONFIG_INTERFACE="$($interface | awk '{print $2}')"
 	DNSMASQ_ROUTING_CONFIG_INTERFACE_SUBNET="$($interface | awk '{print $3}')"
