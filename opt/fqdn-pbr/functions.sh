@@ -9,6 +9,10 @@ ipset_exists() {
 	ipset -q list "$1" >/dev/null
 }
 
+ipset_in_use() {
+	iptables-save | grep -qw "--match-set $1"
+}
+
 ipset_create() {
 	if ! ipset_exists "$IPSET_TABLE"; then
 		ipset create "$IPSET_TABLE" hash:ip timeout "$IPSET_TABLE_TIMEOUT"
@@ -17,7 +21,7 @@ ipset_create() {
 }
 
 ipset_destroy() {
-	if iptables_rule_exists "$IPTABLES_RULE_SET_MARK" || iptables_rule_exists "$IPTABLES_RULE_RESTORE_MARK"; then
+	if ipset_in_use "$IPSET_TABLE"; then
 		echo "Cannot destroy ipset $IPSET_TABLE: iptables rules exist" >&2
 		return 1
 	elif ipset_exists "$IPSET_TABLE"; then
@@ -62,11 +66,11 @@ iptables_rule_delete() {
 }
 
 get_iptable_rule_set_mark() {
-	echo "PREROUTING -w -t mangle -i $1 ! -s $2 -m conntrack --ctstate NEW -m set --match-set $3 dst -j CONNMARK --set-mark $4"
+	echo "PREROUTING -w -t mangle -s $1 -m conntrack --ctstate NEW -m set --match-set $2 dst -j CONNMARK --set-mark $3"
 }
 
 get_iptable_rule_restore_mark() {
-	echo "PREROUTING -w -t mangle -i $1 ! -s $2 -m set --match-set $3 dst -j CONNMARK --restore-mark"
+	echo "PREROUTING -w -t mangle -s $1 -m set --match-set $2 dst -j CONNMARK --restore-mark"
 }
 
 iptables_apply_rules() {
@@ -78,11 +82,9 @@ iptables_apply_rules() {
 	old_ifs="$IFS"
 	IFS=' '
 	for interface_lan in $INTERFACE_LAN; do
-		for interface_wan_subnet in $INTERFACE_WAN_SUBNET; do
-			iptables_rule_add "$(get_iptable_rule_set_mark "$interface_lan" "$interface_wan_subnet" "$IPSET_TABLE" "$MARK")"
-			iptables_rule_add "$(get_iptable_rule_restore_mark "$interface_lan" "$interface_wan_subnet" "$IPSET_TABLE")"
-			echo "Applied iptables rules for interface lan $interface_lan and wan subnet $interface_wan_subnet"
-		done
+		iptables_rule_add "$(get_iptable_rule_set_mark "$interface_lan" "$IPSET_TABLE" "$MARK")"
+		iptables_rule_add "$(get_iptable_rule_restore_mark "$interface_lan" "$IPSET_TABLE")"
+		echo "Applied iptables rules for interface lan $interface_lan"
 	done
 	IFS="$old_ifs"
 }
@@ -92,11 +94,9 @@ iptables_unapply_rules() {
 	old_ifs="$IFS"
 	IFS=' '
 	for interface_lan in $INTERFACE_LAN; do
-		for interface_wan_subnet in $INTERFACE_WAN_SUBNET; do
-			iptables_rule_delete "$(get_iptable_rule_set_mark "$interface_lan" "$interface_wan_subnet" "$IPSET_TABLE" "$MARK")"
-			iptables_rule_delete "$(get_iptable_rule_restore_mark "$interface_lan" "$interface_wan_subnet" "$IPSET_TABLE")"
-			echo "Unapplied iptables rules for interface lan $interface_lan and wan subnet $interface_wan_subnet"
-		done
+		iptables_rule_delete "$(get_iptable_rule_set_mark "$interface_lan" "$IPSET_TABLE" "$MARK")"
+		iptables_rule_delete "$(get_iptable_rule_restore_mark "$interface_lan" "$IPSET_TABLE")"
+		echo "Unapplied iptables rules for interface lan $interface_lan"
 	done
 	IFS="$old_ifs"
 }

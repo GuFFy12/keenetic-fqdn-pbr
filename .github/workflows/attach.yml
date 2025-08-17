@@ -36,11 +36,12 @@ jobs:
           Architecture: all
           Maintainer: $MAINTAINER
           Description: $DESCRIPTION
-          Depends: dnsmasq ipset iptables #TODO verify dependencies
+          Depends: dnsmasq ipset iptables
           EOF
 
           cat > ./CONTROL/conffiles <<EOF
-          #TODO
+          /opt/etc/dnsmasq.conf
+          /opt/etc/fqdn-pbr/config.conf
           EOF
 
           tar --owner=0 --group=0 -czf ./control.tar.gz -C ./CONTROL .

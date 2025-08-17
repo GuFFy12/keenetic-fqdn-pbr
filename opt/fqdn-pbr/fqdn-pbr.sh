@@ -4,8 +4,8 @@ IFS=$'\n\t'
 
 SCRIPT="$(readlink -f "$0")"
 FQDN_PBR_BASE="$(dirname "$SCRIPT")"
-. "$FQDN_PBR_BASE/functions.sh"
 . "$FQDN_PBR_BASE/config.conf"
+. "$FQDN_PBR_BASE/functions.sh"
 
 do_start() {
 	ipset_create
