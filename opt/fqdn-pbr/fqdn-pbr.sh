@@ -33,19 +33,11 @@ do_stop() {
 	echo FQDN PBR stopped
 }
 
-validate_config() {
-	# Minimalist variable validation relying on 'set -u' to catch unset vars.
-	# ':' is a no-op used to expand all required variables and trigger an error if any are missing.
-	: "$KILL_SWITCH" "$IPSET_TABLE_SAVE" "$IPSET_TABLE" "$IPSET_TABLE_TIMEOUT" \
-    "$INTERFACE_LAN_SUBNETS" "$INTERFACE_WAN" "$MARK"
-}
-
 usage() {
 	echo "Usage: $SCRIPT <start|stop|restart|save|restore>" >&2
 	exit 1
 }
 
-validate_config
 if [ "$#" -ne 1 ]; then
 	usage
 fi

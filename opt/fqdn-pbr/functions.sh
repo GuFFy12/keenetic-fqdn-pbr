@@ -10,7 +10,7 @@ ipset_exists() {
 }
 
 ipset_in_use() {
-	iptables-save | grep -qw "\--match-set blocklist"
+	iptables-save | grep -qw -- "--match-set $1"
 }
 
 ipset_create() {
@@ -52,9 +52,7 @@ ipset_restore() {
 iptables_rule_do() {
     local op="$1"; shift
     local builder="$1"; shift
-    # Превращаем вывод builder'а (по одному токену на строке) в "$@"
-    # Важно: токены не должны содержать пробелов — у нас их и нет.
-    # shellcheck disable=SC2046
+
     "$builder" "$@" | xargs -0 -r iptables "$op"
 }
 
