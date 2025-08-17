@@ -157,7 +157,7 @@ ip_route_blackhole_unapply() {
 ip_route_interface_apply() {
 	if ! ip_link_up "$INTERFACE_WAN"; then
 		echo "Cannot apply ip route $MARK: interface wan $INTERFACE_WAN is down" >&2
-		return 1
+		return
 	elif ! ip_route_exists "$MARK"; then
 		ip route add default dev "$INTERFACE_WAN" table "$MARK"
 		echo "Applied ip route $MARK to interface wan $INTERFACE_WAN"
