@@ -49,28 +49,33 @@ ipset_restore() {
 	fi
 }
 
-iptables_rule_exists() {
-	eval iptables -C "$@" >/dev/null 2>&1
+iptables_rule_do() {
+    local op="$1"; shift
+    local builder="$1"; shift
+    # Превращаем вывод builder'а (по одному токену на строке) в "$@"
+    # Важно: токены не должны содержать пробелов — у нас их и нет.
+    # shellcheck disable=SC2046
+    "$builder" "$@" | xargs -0 -r iptables "$op"
 }
 
 iptables_rule_add() {
-	if ! iptables_rule_exists "$@"; then
-		eval iptables -A "$@"
+	if ! iptables_rule_do -C "$@"; then 
+		iptables_rule_do -A "$@"; 
 	fi
 }
 
 iptables_rule_delete() {
-	if iptables_rule_exists "$@"; then
-		eval iptables -D "$@"
+	if iptables_rule_do -C "$@"; then 
+		iptables_rule_do -D "$@"; 
 	fi
 }
 
-get_iptable_rule_set_mark() {
-	echo "PREROUTING -w -t mangle -s $1 -m conntrack --ctstate NEW -m set --match-set $2 dst -j CONNMARK --set-mark $3"
+build_rule_set_mark() {
+	printf '%s\0' PREROUTING -w -t mangle -s "$1" -m conntrack --ctstate NEW -m set --match-set "$2" dst -j CONNMARK --set-mark "$3"
 }
 
-get_iptable_rule_restore_mark() {
-	echo "PREROUTING -w -t mangle -s $1 -m set --match-set $2 dst -j CONNMARK --restore-mark"
+build_rule_restore_mark() {
+	printf '%s\0' PREROUTING -w -t mangle -s "$1" -m set --match-set "$2" dst -j CONNMARK --restore-mark
 }
 
 iptables_apply_rules() {
@@ -82,8 +87,8 @@ iptables_apply_rules() {
 	old_ifs="$IFS"
 	IFS=' '
 	for interface_lan_subnet in $INTERFACE_LAN_SUBNETS; do
-		iptables_rule_add "$(get_iptable_rule_set_mark "$interface_lan_subnet" "$IPSET_TABLE" "$MARK")"
-		iptables_rule_add "$(get_iptable_rule_restore_mark "$interface_lan_subnet" "$IPSET_TABLE")"
+		iptables_rule_add build_rule_set_mark "$interface_lan_subnet" "$IPSET_TABLE" "$MARK"
+        iptables_rule_add build_rule_restore_mark "$interface_lan_subnet" "$IPSET_TABLE"
 		echo "Applied iptables rules for interface lan subnet $interface_lan_subnet"
 	done
 	IFS="$old_ifs"
@@ -94,8 +99,8 @@ iptables_unapply_rules() {
 	old_ifs="$IFS"
 	IFS=' '
 	for interface_lan_subnet in $INTERFACE_LAN_SUBNETS; do
-		iptables_rule_delete "$(get_iptable_rule_set_mark "$interface_lan_subnet" "$IPSET_TABLE" "$MARK")"
-		iptables_rule_delete "$(get_iptable_rule_restore_mark "$interface_lan_subnet" "$IPSET_TABLE")"
+		iptables_rule_delete build_rule_set_mark "$interface_lan_subnet" "$IPSET_TABLE" "$MARK"
+		iptables_rule_delete build_rule_restore_mark "$interface_lan_subnet" "$IPSET_TABLE"
 		echo "Unapplied iptables rules for interface lan subnet $interface_lan_subnet"
 	done
 	IFS="$old_ifs"
