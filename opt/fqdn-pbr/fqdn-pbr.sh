@@ -37,7 +37,7 @@ validate_config() {
 	# Minimalist variable validation relying on 'set -u' to catch unset vars.
 	# ':' is a no-op used to expand all required variables and trigger an error if any are missing.
 	: "$KILL_SWITCH" "$IPSET_TABLE_SAVE" "$IPSET_TABLE" "$IPSET_TABLE_TIMEOUT" \
-    "$INTERFACE_LAN" "$INTERFACE_WAN" "$INTERFACE_WAN_SUBNET" "$MARK"
+    "$INTERFACE_LAN_SUBNETS" "$INTERFACE_WAN" "$MARK"
 }
 
 usage() {

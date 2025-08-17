@@ -74,17 +74,17 @@ get_iptable_rule_restore_mark() {
 }
 
 iptables_apply_rules() {
-	if ! ipset_exists; then
+	if ! ipset_exists "$IPSET_TABLE"; then
 		echo "Cannot apply iptables rules: ipset $IPSET_TABLE does not exist" >&2
 		return 1
 	fi
 	echo "Applying iptables rules for ipset $IPSET_TABLE and mark $MARK"
 	old_ifs="$IFS"
 	IFS=' '
-	for interface_lan in $INTERFACE_LAN; do
-		iptables_rule_add "$(get_iptable_rule_set_mark "$interface_lan" "$IPSET_TABLE" "$MARK")"
-		iptables_rule_add "$(get_iptable_rule_restore_mark "$interface_lan" "$IPSET_TABLE")"
-		echo "Applied iptables rules for interface lan $interface_lan"
+	for interface_lan_subnet in $INTERFACE_LAN_SUBNETS; do
+		iptables_rule_add "$(get_iptable_rule_set_mark "$interface_lan_subnet" "$IPSET_TABLE" "$MARK")"
+		iptables_rule_add "$(get_iptable_rule_restore_mark "$interface_lan_subnet" "$IPSET_TABLE")"
+		echo "Applied iptables rules for interface lan subnet $interface_lan_subnet"
 	done
 	IFS="$old_ifs"
 }
@@ -93,10 +93,10 @@ iptables_unapply_rules() {
 	echo "Unapplying iptables rules for ipset $IPSET_TABLE and mark $MARK"
 	old_ifs="$IFS"
 	IFS=' '
-	for interface_lan in $INTERFACE_LAN; do
-		iptables_rule_delete "$(get_iptable_rule_set_mark "$interface_lan" "$IPSET_TABLE" "$MARK")"
-		iptables_rule_delete "$(get_iptable_rule_restore_mark "$interface_lan" "$IPSET_TABLE")"
-		echo "Unapplied iptables rules for interface lan $interface_lan"
+	for interface_lan_subnet in $INTERFACE_LAN_SUBNETS; do
+		iptables_rule_delete "$(get_iptable_rule_set_mark "$interface_lan_subnet" "$IPSET_TABLE" "$MARK")"
+		iptables_rule_delete "$(get_iptable_rule_restore_mark "$interface_lan_subnet" "$IPSET_TABLE")"
+		echo "Unapplied iptables rules for interface lan subnet $interface_lan_subnet"
 	done
 	IFS="$old_ifs"
 }
