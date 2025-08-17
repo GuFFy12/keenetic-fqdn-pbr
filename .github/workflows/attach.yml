@@ -39,9 +39,18 @@ jobs:
           Depends: dnsmasq ipset iptables
           EOF
 
+          cat > ./CONTROL/prerm <<EOF
+          #!/opt/bin/busybox sh
+          set -euo pipefail
+          IFS=$'\n\t'
+
+          /opt/fqdn-pbr/fqdn-pbr.sh stop
+          EOF
+
           cat > ./CONTROL/conffiles <<EOF
           /opt/etc/dnsmasq.conf
           /opt/fqdn-pbr/config.conf
+          /opt/fqdn-pbr/ipset_fqdn-pbr.rules
           EOF
 
           tar --owner=0 --group=0 -czf ./control.tar.gz -C ./CONTROL .
