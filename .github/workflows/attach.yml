@@ -52,6 +52,8 @@ jobs:
           /opt/fqdn-pbr/config.conf
           EOF
 
+          chmod 0755 ./CONTROL/prerm
+
           tar --owner=0 --group=0 -czf ./control.tar.gz -C ./CONTROL .
           tar --owner=0 --group=0 -czf ./data.tar.gz ./opt/
           echo "2.0" > ./debian-binary
