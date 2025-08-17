@@ -1,0 +1,64 @@
+name: Attach build file
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  attach:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout main repository
+        uses: actions/checkout@v4
+
+      - name: Build package
+        id: build
+        env:
+          PACKAGE: "${{ github.event.repository.name }}"
+          MAINTAINER: "${{ github.repository_owner}} <${{ github.repository_owner }}@users.noreply.github.com>"
+          DESCRIPTION: "${{ github.event.repository.description }}"
+        run: |
+          set -euo pipefail
+          IFS=$'\n\t'
+
+          VERSION="${GITHUB_REF_NAME#v}"
+          BUILD_FILE_NAME="${PACKAGE}_${VERSION}_all.ipk"
+
+          mkdir -p ./CONTROL
+
+          cat > ./CONTROL/control <<EOF
+          Package: $PACKAGE
+          Version: $VERSION
+          Architecture: all
+          Maintainer: $MAINTAINER
+          Description: $DESCRIPTION
+          Depends: dnsmasq ipset iptables #TODO verify dependencies
+          EOF
+
+          cat > ./CONTROL/conffiles <<EOF
+          #TODO
+          EOF
+
+          tar --owner=0 --group=0 -czf ./control.tar.gz -C ./CONTROL .
+          tar --owner=0 --group=0 -czf ./data.tar.gz ./opt/
+          echo "2.0" > ./debian-binary
+
+          tar -czf "./$BUILD_FILE_NAME" debian-binary control.tar.gz data.tar.gz
+
+          echo "build_file_path=./$BUILD_FILE_NAME" >> "$GITHUB_OUTPUT"
+
+      - name: Attach build file to release
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+          BUILD_TAG: "${{ github.event.release.tag_name }}"
+          BUILD_FILE_PATH: "${{ steps.build.outputs.build_file_path }}"
+        run: |
+          set -euo pipefail
+          IFS=$'\n\t'
+
+          gh release upload "$BUILD_TAG" "$BUILD_FILE_PATH" --clobber
