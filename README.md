@@ -79,4 +79,4 @@
   - `IPSET_TABLE_TIMEOUT` - тайм-аут для записей в таблице (`0` для неограниченного времени).
   - `MARK` - маркер, используемый в iptables.
 
-- Для запуска используйте команду: `/opt/etc/init.d/S52fqdn-pbr start`.
+- Для запуска используйте команды: `/opt/etc/init.d/S56dnsmasq start` и `/opt/etc/init.d/S52fqdn-pbr start`.

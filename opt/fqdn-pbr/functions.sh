@@ -155,28 +155,18 @@ ip_route_blackhole_unapply() {
 }
 
 ip_route_interface_apply() {
-	old_ifs="$IFS"
-	IFS=' '
-	for interface_wan in $INTERFACE_WAN; do
-		if ! ip_link_up "$interface_wan"; then
-			echo "Cannot apply ip route $MARK: interface wan $interface_wan is down" >&2
-			return 1
-		elif ! ip_route_exists "$MARK"; then
-			ip route add default dev "$interface_wan" table "$MARK"
-			echo "Applied ip route $MARK to interface wan $interface_wan"
-		fi
-	done
-	IFS="$old_ifs"
+	if ! ip_link_up "$INTERFACE_WAN"; then
+		echo "Cannot apply ip route $MARK: interface wan $INTERFACE_WAN is down" >&2
+		return 1
+	elif ! ip_route_exists "$MARK"; then
+		ip route add default dev "$INTERFACE_WAN" table "$MARK"
+		echo "Applied ip route $MARK to interface wan $INTERFACE_WAN"
+	fi
 }
 
 ip_route_interface_unapply() {
-	old_ifs="$IFS"
-	IFS=' '
-	for interface_wan in $INTERFACE_WAN; do
-		if ip_route_dev_exists "$MARK" "$interface_wan"; then
-			ip route del default dev "$interface_wan" table "$MARK"
-			echo "Unapplied ip route $MARK to interface wan $interface_wan"
-		fi
-	done
-	IFS="$old_ifs"
+	if ip_route_dev_exists "$MARK" "$INTERFACE_WAN"; then
+		ip route del default dev "$INTERFACE_WAN" table "$MARK"
+		echo "Unapplied ip route $MARK to interface wan $INTERFACE_WAN"
+	fi
 }
