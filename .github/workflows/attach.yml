@@ -41,7 +41,7 @@ jobs:
 
           cat > ./CONTROL/conffiles <<EOF
           /opt/etc/dnsmasq.conf
-          /opt/etc/fqdn-pbr/config.conf
+          /opt/fqdn-pbr/config.conf
           EOF
 
           tar --owner=0 --group=0 -czf ./control.tar.gz -C ./CONTROL .

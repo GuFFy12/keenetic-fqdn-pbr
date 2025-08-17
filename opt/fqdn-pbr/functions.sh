@@ -10,7 +10,7 @@ ipset_exists() {
 }
 
 ipset_in_use() {
-	iptables-save | grep -qw "--match-set $1"
+	iptables-save | grep -qw "\--match-set blocklist"
 }
 
 ipset_create() {
@@ -59,13 +59,13 @@ iptables_rule_do() {
 }
 
 iptables_rule_add() {
-	if ! iptables_rule_do -C "$@"; then 
+	if ! iptables_rule_do -C "$@" >/dev/null 2>&1; then 
 		iptables_rule_do -A "$@"; 
 	fi
 }
 
 iptables_rule_delete() {
-	if iptables_rule_do -C "$@"; then 
+	if iptables_rule_do -C "$@" >/dev/null 2>&1; then 
 		iptables_rule_do -D "$@"; 
 	fi
 }
