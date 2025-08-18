@@ -5,101 +5,65 @@ IFS=$'\n\t'
 FQDN_PBR_BASE="${FQDN_PBR_BASE:-/opt/fqdn-pbr}"
 IPSET_TABLE_RULES_FILE="${IPSET_TABLE_RULES_FILE:-"$FQDN_PBR_BASE/ipset_$IPSET_TABLE.rules"}"
 
-ipset_exists() {
-	ipset -q list "$1" >/dev/null
-}
-
-ipset_in_use() {
-	iptables-save | grep -qw -- "--match-set $1"
-}
-
 ipset_create() {
-	if ! ipset_exists "$IPSET_TABLE"; then
-		ipset create "$IPSET_TABLE" hash:ip timeout "$IPSET_TABLE_TIMEOUT"
-		echo "Created ipset $IPSET_TABLE"
-	fi
+	ipset create -exist "$IPSET_TABLE" hash:ip timeout "$IPSET_TABLE_TIMEOUT" || true
 }
 
 ipset_destroy() {
-	if ipset_in_use "$IPSET_TABLE"; then
-		echo "Cannot destroy ipset $IPSET_TABLE: iptables rules exist" >&2
-		return 1
-	elif ipset_exists "$IPSET_TABLE"; then
-		ipset destroy "$IPSET_TABLE"
-		echo "Destroyed ipset $IPSET_TABLE"
-	fi
+	ipset destroy "$IPSET_TABLE" || true
 }
 
 ipset_save() {
-	if ! ipset_exists "$IPSET_TABLE"; then
-		echo "Cannot save ipset $IPSET_TABLE: ipset does not exist" >&2
-		return 1
-	fi
-	ipset save "$IPSET_TABLE" | tail -n +2 >"$IPSET_TABLE_RULES_FILE"
-	echo "Saved ipset $IPSET_TABLE"
+	ipset save "$IPSET_TABLE" | tail -n +2 >"$IPSET_TABLE_RULES_FILE" || true
 }
 
 ipset_restore() {
-	if ! ipset_exists "$IPSET_TABLE"; then
-		echo "Cannot restore ipset $IPSET_TABLE: ipset does not exist" >&2
-		return 1
-	elif [ -f "$IPSET_TABLE_RULES_FILE" ]; then
-		ipset restore -exist <"$IPSET_TABLE_RULES_FILE"
-		echo "Restored ipset $IPSET_TABLE"
-	fi
+	ipset restore -exist <"$IPSET_TABLE_RULES_FILE" || true
 }
 
 iptables_rule_do() {
     local op="$1"; shift
     local builder="$1"; shift
 
-    "$builder" "$@" | xargs -0 -r iptables "$op"
+    "$builder" "$@" | xargs -0 -r iptables -w -t mangle "$op"
+}
+
+iptables_rule_check() {
+	iptables_rule_do -C "$@" >/dev/null 2>&1
 }
 
 iptables_rule_add() {
-	if ! iptables_rule_do -C "$@" >/dev/null 2>&1; then 
-		iptables_rule_do -A "$@"; 
-	fi
+	iptables_rule_check "$@" || iptables_rule_do -A "$@"
 }
 
 iptables_rule_delete() {
-	if iptables_rule_do -C "$@" >/dev/null 2>&1; then 
-		iptables_rule_do -D "$@"; 
-	fi
+	iptables_rule_do -D "$@";
 }
 
 build_rule_set_mark() {
-	printf '%s\0' PREROUTING -w -t mangle -s "$1" -m conntrack --ctstate NEW -m set --match-set "$2" dst -j CONNMARK --set-mark "$3"
+	printf '%s\0' PREROUTING -s "$1" -m conntrack --ctstate NEW -m set --match-set "$2" dst -j CONNMARK --set-mark "$3"
 }
 
 build_rule_restore_mark() {
-	printf '%s\0' PREROUTING -w -t mangle -s "$1" -m set --match-set "$2" dst -j CONNMARK --restore-mark
+	printf '%s\0' PREROUTING -s "$1" -m set --match-set "$2" dst -j CONNMARK --restore-mark
 }
 
 iptables_apply_rules() {
-	if ! ipset_exists "$IPSET_TABLE"; then
-		echo "Cannot apply iptables rules: ipset $IPSET_TABLE does not exist" >&2
-		return 1
-	fi
-	echo "Applying iptables rules for ipset $IPSET_TABLE and mark $MARK"
 	old_ifs="$IFS"
 	IFS=' '
 	for interface_lan_subnet in $INTERFACE_LAN_SUBNETS; do
-		iptables_rule_add build_rule_set_mark "$interface_lan_subnet" "$IPSET_TABLE" "$MARK"
-        iptables_rule_add build_rule_restore_mark "$interface_lan_subnet" "$IPSET_TABLE"
-		echo "Applied iptables rules for interface lan subnet $interface_lan_subnet"
+		iptables_rule_add build_rule_set_mark "$interface_lan_subnet" "$IPSET_TABLE" "$MARK" || true
+        iptables_rule_add build_rule_restore_mark "$interface_lan_subnet" "$IPSET_TABLE" || true
 	done
 	IFS="$old_ifs"
 }
 
 iptables_unapply_rules() {
-	echo "Unapplying iptables rules for ipset $IPSET_TABLE and mark $MARK"
 	old_ifs="$IFS"
 	IFS=' '
 	for interface_lan_subnet in $INTERFACE_LAN_SUBNETS; do
-		iptables_rule_delete build_rule_set_mark "$interface_lan_subnet" "$IPSET_TABLE" "$MARK"
-		iptables_rule_delete build_rule_restore_mark "$interface_lan_subnet" "$IPSET_TABLE"
-		echo "Unapplied iptables rules for interface lan subnet $interface_lan_subnet"
+		iptables_rule_delete build_rule_set_mark "$interface_lan_subnet" "$IPSET_TABLE" "$MARK" || true
+		iptables_rule_delete build_rule_restore_mark "$interface_lan_subnet" "$IPSET_TABLE" || true
 	done
 	IFS="$old_ifs"
 }
@@ -109,62 +73,25 @@ ip_rule_exists() {
 }
 
 ip_rule_apply() {
-	if ! ip_rule_exists "$MARK"; then
-		ip rule add fwmark "$MARK" table "$MARK"
-		echo "Applied ip rule $MARK"
-	fi
+	ip_rule_exists "$MARK" || ip rule add fwmark "$MARK" table "$MARK" || true
 }
 
 ip_rule_unapply() {
-	if ip_rule_exists "$MARK"; then
-		ip rule del fwmark "$MARK" table "$MARK"
-		echo "Unapplied ip rule $MARK"
-	fi
-}
-
-ip_route_exists() {
-	ip route list table "$1" | grep -q "^${2:-.}"
-}
-
-ip_route_blackhole_exists() {
-	ip_route_exists "$1" "blackhole default"
-}
-
-ip_route_dev_exists() {
-	ip_route_exists "$1" "default dev $2"
-}
-
-ip_link_up() {
-	[ -n "$(ip link show "$1" up)" ]
+	ip rule del fwmark "$MARK" table "$MARK" || true
 }
 
 ip_route_blackhole_apply() {
-	if ! ip_route_exists "$MARK"; then
-		ip route add blackhole default table "$MARK"
-		echo "Applied ip route blackhole $MARK"
-	fi
+	ip route add blackhole default table "$MARK" 2>/dev/null || true
 }
 
 ip_route_blackhole_unapply() {
-	if ip_route_blackhole_exists "$MARK"; then
-		ip route del blackhole default table "$MARK"
-		echo "Unapplied ip route blackhole $MARK"
-	fi
+	ip route del blackhole default table "$MARK" || true
 }
 
 ip_route_interface_apply() {
-	if ! ip_link_up "$INTERFACE_WAN"; then
-		echo "Cannot apply ip route $MARK: interface wan $INTERFACE_WAN is down" >&2
-		return
-	elif ! ip_route_exists "$MARK"; then
-		ip route add default dev "$INTERFACE_WAN" table "$MARK"
-		echo "Applied ip route $MARK to interface wan $INTERFACE_WAN"
-	fi
+	ip route replace default dev "$INTERFACE_WAN" table "$MARK" || true
 }
 
 ip_route_interface_unapply() {
-	if ip_route_dev_exists "$MARK" "$INTERFACE_WAN"; then
-		ip route del default dev "$INTERFACE_WAN" table "$MARK"
-		echo "Unapplied ip route $MARK to interface wan $INTERFACE_WAN"
-	fi
+	ip route del default dev "$INTERFACE_WAN" table "$MARK" || true
 }
