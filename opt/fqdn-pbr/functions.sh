@@ -22,10 +22,12 @@ ipset_restore() {
 }
 
 iptables_rule_do() {
-    local op="$1"; shift
-    local builder="$1"; shift
+	local op="$1"
+	shift
+	local builder="$1"
+	shift
 
-    "$builder" "$@" | xargs -0 -r iptables -w -t mangle "$op"
+	"$builder" "$@" | xargs -0 -r iptables -w -t mangle "$op"
 }
 
 iptables_rule_check() {
@@ -37,7 +39,7 @@ iptables_rule_add() {
 }
 
 iptables_rule_delete() {
-	iptables_rule_do -D "$@";
+	iptables_rule_do -D "$@"
 }
 
 build_rule_set_mark() {
@@ -53,7 +55,7 @@ iptables_apply_rules() {
 	IFS=' '
 	for interface_lan_subnet in $INTERFACE_LAN_SUBNETS; do
 		iptables_rule_add build_rule_set_mark "$interface_lan_subnet" "$IPSET_TABLE" "$MARK" || true
-        iptables_rule_add build_rule_restore_mark "$interface_lan_subnet" "$IPSET_TABLE" || true
+		iptables_rule_add build_rule_restore_mark "$interface_lan_subnet" "$IPSET_TABLE" || true
 	done
 	IFS="$old_ifs"
 }
